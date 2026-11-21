@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#172554">
+<title>Конвертер единиц</title>
+<style>
+:root{color-scheme:light;--bg:#f3f6fb;--card:#fff;--ink:#172033;--muted:#667085;--line:#e4e9f2;--blue:#2563eb;--blue2:#1d4ed8;--soft:#eff6ff;--green:#087443;--shadow:0 10px 30px rgba(20,40,80,.08)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+.app{max-width:900px;margin:0 auto;padding:24px 16px 48px}.header{display:flex;align-items:center;gap:14px;margin-bottom:22px}.logo{width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,#2563eb,#0f3b9b);color:#fff;display:grid;place-items:center;font-size:27px;box-shadow:var(--shadow)}h1{font-size:clamp(23px,4vw,32px);margin:0}.subtitle{color:var(--muted);font-size:14px}.layout{display:grid;grid-template-columns:220px 1fr;gap:18px}.panel,.workspace{background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow)}.nav{padding:12px;align-self:start;display:grid;gap:6px}.nav button{border:0;background:transparent;padding:12px;border-radius:12px;text-align:left;font:inherit;color:var(--ink);cursor:pointer}.nav button:hover{background:#f3f6fb}.nav button.active{background:var(--soft);color:var(--blue2);font-weight:700}.workspace{padding:clamp(18px,4vw,30px);min-height:430px}.section-title{font-size:22px;margin:0 0 5px}.hint{color:var(--muted);font-size:14px;margin:0 0 22px}.field{display:grid;gap:7px;margin:14px 0}.field label{font-size:13px;font-weight:650;color:#475467}.field input,.field select{width:100%;padding:12px 13px;border:1px solid #cfd7e5;border-radius:11px;background:#fff;color:var(--ink);font:inherit;min-width:0}.field input:focus,.field select:focus{outline:3px solid #dbeafe;border-color:var(--blue)}.grid2,.grid3{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.grid3{grid-template-columns:repeat(3,minmax(0,1fr))}.result{background:#f5f8ff;border:1px solid #dce8ff;border-radius:16px;padding:18px;margin-top:20px}.result-label{font-size:12px;letter-spacing:.07em;color:var(--muted);font-weight:700}.result-value{font-size:clamp(25px,5vw,34px);font-weight:750;color:var(--green);overflow-wrap:anywhere;margin:5px 0}.row{display:flex;justify-content:space-between;align-items:center;gap:10px}.btn{border:1px solid var(--line);background:#fff;padding:10px 14px;border-radius:11px;font:inherit;cursor:pointer}.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.btn:hover{filter:brightness(.97)}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.formula{font-size:20px;text-align:center;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:12px;padding:14px;margin:16px 0}.small{font-size:13px;color:var(--muted)}.radio-list{display:grid;gap:10px;margin:16px 0}.radio-list label{display:flex;gap:9px;align-items:center}.history{display:grid;gap:8px;margin-top:14px}.history-item{padding:10px 12px;background:#f8fafc;border-radius:10px;font-size:14px}.footer{text-align:center;color:var(--muted);font-size:12px;margin-top:20px}
+@media(max-width:680px){.layout{grid-template-columns:1fr}.nav{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}.nav button{text-align:center;padding:10px 5px;font-size:13px}.workspace{min-height:0}.grid3{grid-template-columns:1fr}.app{padding:18px 12px 36px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="header"><div class="logo">⇄</div><div><h1>Конвертер единиц</h1><div class="subtitle">Быстрые расчёты без рекламы и лишних действий</div></div></header>
+  <div class="layout">
+    <nav class="panel nav" aria-label="Разделы">
+      <button class="active" data-tab="length">📏 Длина</button>
+      <button data-tab="weight">⚖️ Вес</button>
+      <button data-tab="temperature">🌡️ Температура</button>
+      <button data-tab="nutrition">🥗 БЖУК</button>
+      <button data-tab="math">∑ Математика</button>
+      <button data-tab="physics">⚛️ Физика</button>
+    </nav>
+    <main class="workspace" id="content" aria-live="polite"></main>
+  </div>
+  <div class="footer">Конвертер единиц · Все вычисления выполняются прямо в браузере</div>
+</div>
+<script>
+const $ = s => document.querySelector(s);
+const fmt = n => Number.isFinite(n) ? new Intl.NumberFormat('ru-RU',{maximumFractionDigits:8}).format(n) : '—';
+const units = {
+ length:[['m','Метры',1],['km','Километры',1000],['mi','Мили',1609.344],['ft','Футы',.3048],['in','Дюймы',.0254]],
+ weight:[['kg','Килограммы',1],['g','Граммы',.001],['lb','Фунты',.45359237]]
+};
+let current='length', history=[];
+function options(arr){return arr.map(u=>`<option value="${u[0]}">${u[1]}</option>`).join('')}
+function field(label,id,value='1',type='number'){return `<div class="field"><label for="${id}">${label}</label><input id="${id}" type="${type}" value="${value}" step="any"></div>`}
+function selectField(label,id,arr,selected){return `<div class="field"><label for="${id}">${label}</label><select id="${id}">${arr.map(u=>`<option value="${u[0]}" ${u[0]===selected?'selected':''}>${u[1]}</option>`).join('')}</select></div>`}
+function resultBox(label='РЕЗУЛЬТАТ'){return `<div class="result"><div class="result-label">${label}</div><div class="result-value" id="result">—</div><div class="row"><span class="small" id="detail"></span><button class="btn" id="copy">Копировать</button></div></div>`}
+function addHistory(text){history.unshift(text);history=history.slice(0,6)}
+function show(){
+ document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===current));
+ const c=$('#content');
+ if(current==='length'||current==='weight'){
+  const arr=units[current];c.innerHTML=`<h2 class="section-title">Конвертация ${current==='length'?'длины':'веса'}</h2><p class="hint">Введите число и выберите исходную и целевую единицы.</p>${field('Значение','value','1')}<div class="grid2">${selectField('Из единицы','from',arr,arr[0][0])}${selectField('В единицу','to',arr,arr[1][0])}</div>${resultBox()}<div class="actions"><button class="btn" id="swap">⇄ Поменять единицы</button></div>`;
+  const calc=()=>{const n=Number($('#value').value),f=arr.find(x=>x[0]===$('#from').value),t=arr.find(x=>x[0]===$('#to').value);const out=n*f[2]/t[2];$('#result').textContent=fmt(out);$('#detail').textContent=`${$('#value').value} ${f[1]} = ${fmt(out)} ${t[1]}`;window.lastResult=fmt(out);};
+  ['value','from','to'].forEach(id=>$('#'+id).addEventListener('input',calc));$('#swap').onclick=()=>{const f=$('#from'),t=$('#to'),v=f.value;f.value=t.value;t.value=v;calc()};$('#copy').onclick=copyResult;calc();
+ } else if(current==='temperature'){
+  const arr=[['C','Цельсий'],['F','Фаренгейт'],['K','Кельвин']];
+  c.innerHTML=`<h2 class="section-title">Конвертация температуры</h2><p class="hint">Перевод между °C, °F и K.</p>${field('Значение','value','20')}<div class="grid2">${selectField('Из единицы','from',arr,'C')}${selectField('В единицу','to',arr,'F')}</div>${resultBox()}`;
+  const calc=()=>{let n=Number($('#value').value),f=$('#from').value,t=$('#to').value,cel=f==='C'?n:f==='F'?(n-32)*5/9:n-273.15,out=t==='C'?cel:t==='F'?cel*9/5+32:cel+273.15;$('#result').textContent=fmt(out);$('#detail').textContent=`${n} ${f==='C'?'°C':f==='F'?'°F':'K'} = ${fmt(out)} ${t==='C'?'°C':t==='F'?'°F':'K'}`;window.lastResult=fmt(out)};
+  ['value','from','to'].forEach(id=>$('#'+id).addEventListener('input',calc));$('#copy').onclick=copyResult;calc();
+ } else if(current==='nutrition'){
+  c.innerHTML=`<h2 class="section-title">Калькулятор БЖУК</h2><p class="hint">Введите граммы белков, жиров и углеводов. Калорийность рассчитывается по коэффициентам 4/9/4.</p><div class="grid3">${field('Белки, г','protein','10')}${field('Жиры, г','fat','5')}${field('Углеводы, г','carbs','20')}</div>${resultBox('ЭНЕРГЕТИЧЕСКАЯ ЦЕННОСТЬ')}<div class="small" id="macroDetail"></div>`;
+  const calc=()=>{let p=Number($('#protein').value),f=Number($('#fat').value),b=Number($('#carbs').value),k=p*4+f*9+b*4;$('#result').textContent=fmt(k)+' ккал';$('#detail').textContent='Приблизительная энергетическая ценность';$('#macroDetail').textContent=`Белки: ${fmt(p*4)} ккал · Жиры: ${fmt(f*9)} ккал · Углеводы: ${fmt(b*4)} ккал`;window.lastResult=fmt(k)+' ккал'};
+  ['protein','fat','carbs'].forEach(id=>$('#'+id).addEventListener('input',calc));$('#copy').onclick=copyResult;calc();
+ } else if(current==='math'){
+  c.innerHTML=`<h2 class="section-title">Решение квадратного уравнения</h2><p class="hint">Найдите корни уравнения ax² + bx + c = 0.</p><div class="formula">ax² + bx + c = 0</div><div class="grid3">${field('Коэффициент a','a','1')}${field('Коэффициент b','b','2')}${field('Коэффициент c','cc','-3')}</div>${resultBox('КОРНИ УРАВНЕНИЯ')}<div class="small" id="steps"></div><div class="actions"><button class="btn" id="percentBtn">Калькулятор процентов</button></div>`;
+  const calc=()=>{let a=Number($('#a').value),b=Number($('#b').value),cc=Number($('#cc').value),out='',step='';if(![a,b,cc].every(Number.isFinite)){out='Проверьте коэффициенты'}else if(a===0){if(b===0)out=cc===0?'Бесконечно много решений':'Решений нет';else out='x = '+fmt(-cc/b)}else{let d=b*b-4*a*cc;step=`D = b² − 4ac = ${fmt(d)}. `;if(d<0)out='Действительных корней нет';else if(d===0)out='x = '+fmt(-b/(2*a));else out=`x₁ = ${fmt((-b+Math.sqrt(d))/(2*a))}; x₂ = ${fmt((-b-Math.sqrt(d))/(2*a))}`;}$('#result').textContent=out;$('#detail').textContent='Результат вычисления';$('#steps').textContent=step;window.lastResult=out};
+  ['a','b','cc'].forEach(id=>$('#'+id).addEventListener('input',calc));$('#copy').onclick=copyResult;calc();
+  $('#percentBtn').onclick=()=>{c.innerHTML=`<h2 class="section-title">Калькулятор процентов</h2><p class="hint">Сколько составляет X% от числа Y?</p>${field('Процент, %','pct','15')}${field('Число','base','200')}${resultBox()}<button class="btn" id="back">← К уравнению</button>`;const run=()=>{let n=Number($('#pct').value)*Number($('#base').value)/100;$('#result').textContent=fmt(n);$('#detail').textContent=`${$('#pct').value}% от ${$('#base').value}`;window.lastResult=fmt(n)};['pct','base'].forEach(id=>$('#'+id).addEventListener('input',run));$('#copy').onclick=copyResult;$('#back').onclick=show;run()};
+ } else if(current==='physics'){
+  c.innerHTML=`<h2 class="section-title">Физический калькулятор</h2><p class="hint">Выберите формулу и заполните известные значения.</p><div class="field"><label for="formula">Формула</label><select id="formula"><option value="speed">Скорость: v = s / t</option><option value="force">Сила: F = m × a</option><option value="work">Работа: A = F × s</option><option value="density">Плотность: ρ = m / V</option><option value="power">Мощность: P = A / t</option><option value="pressure">Давление: p = F / S</option><option value="ohm">Закон Ома: I = U / R</option></select></div><div id="physicsFields"></div>${resultBox('РЕЗУЛЬТАТ')}`;
+  const render=()=>{let type=$('#formula').value,defs={speed:[['Расстояние, м','v1','100'],['Время, с','v2','2']],force:[['Масса, кг','v1','10'],['Ускорение, м/с²','v2','9.8']],work:[['Сила, Н','v1','20'],['Перемещение, м','v2','5']],density:[['Масса, кг','v1','10'],['Объём, м³','v2','2']],power:[['Работа, Дж','v1','100'],['Время, с','v2','5']],pressure:[['Сила, Н','v1','100'],['Площадь, м²','v2','2']],ohm:[['Напряжение, В','v1','12'],['Сопротивление, Ом','v2','4']]};$('#physicsFields').innerHTML=`<div class="grid2">${defs[type].map(d=>field(d[0],d[1],d[2])).join('')}</div>`;['v1','v2'].forEach(id=>$('#'+id).addEventListener('input',calc));calc()};
+  const calc=()=>{let type=$('#formula').value,a=Number($('#v1').value),b=Number($('#v2').value),div=['speed','density','power','pressure','ohm'].includes(type),out;if(div&&b===0)out='Деление на ноль невозможно';else{let n=type==='speed'?a/b:type==='force'?a*b:type==='work'?a*b:type==='density'?a/b:type==='power'?a/b:type==='pressure'?a/b:a/b;let unit={speed:'м/с',force:'Н',work:'Дж',density:'кг/м³',power:'Вт',pressure:'Па',ohm:'А'}[type];out=fmt(n)+' '+unit}$('#result').textContent=out;$('#detail').textContent='Расчёт по выбранной формуле';window.lastResult=out};
+  $('#formula').onchange=render;$('#copy').onclick=copyResult;render();
+ }
+}
+function copyResult(){const text=window.lastResult||$('#result')?.textContent||'';if(navigator.clipboard?.writeText)navigator.clipboard.writeText(text).then(()=>toast('Скопировано')).catch(()=>toast('Не удалось скопировать'));else toast('Выделите результат и скопируйте вручную')}
+function toast(msg){let el=$('#toast');if(!el){el=document.createElement('div');el.id='toast';el.style='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#172033;color:white;padding:10px 16px;border-radius:10px;z-index:5';document.body.append(el)}el.textContent=msg;el.hidden=false;clearTimeout(window.toastTimer);window.toastTimer=setTimeout(()=>el.hidden=true,1800)}
+document.querySelectorAll('.nav button').forEach(b=>b.addEventListener('click',()=>{current=b.dataset.tab;show()}));
+show();
+</script>
+</body>
+</html>
